@@ -5,6 +5,33 @@ app_description = "ael customization and dev"
 app_email = "nikhil@aitsind.com"
 app_license = "mit"
 
+doctype_js = {
+    "Quotation": "public/js/quotation.js",
+    "Sales Order": "public/js/sales_order.js",
+    "Sales Invoice": "public/js/sales_invoice.js"
+}
+
+fixtures = [
+    {
+        "dt": "Custom Field",
+        "filters": [
+            ["module", "=", "custom_quotation"]
+        ]
+    },
+    {
+        "dt": "Custom Field",
+        "filters": [
+            ["module", "=", "custom job description"]
+        ]
+    }
+]
+
+override_whitelisted_methods = {
+    "erpnext.selling.doctype.quotation.quotation.make_sales_order":
+        "ael_customization.custom_quotation.doctype.quotation.quotation.make_sales_order",
+    "erpnext.selling.doctype.sales_order.sales_order.make_sales_invoice":
+        "ael_customization.custom_job_description.doctype.sales_order.sales_order.make_sales_invoice"
+}
 # Apps
 # ------------------
 
