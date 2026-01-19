@@ -82,10 +82,10 @@ class Quotation(Document):
         total_boxes = 0.0
 
         for row in (self.custom_dimension_details or []):
-            total_cbm += flt(row.custom_cbm or 0)
+            total_cbm += flt(row.cbm or 0)
             total_weight += flt(row.weight_kg or 0)
             total_volume_weight += flt(row.volume_weight or 0)
-            total_boxes += flt(row.number_of_boxes or 0)
+            total_boxes += flt(row.no_of_boxes or 0)
 
         total_cbm = flt(total_cbm, 2)
 
