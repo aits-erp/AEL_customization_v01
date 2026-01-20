@@ -178,7 +178,7 @@ def map_parent_fields_so_to_si(source, target, source_parent=None):
         "custom_mbl_date": "custom_mawb_date",
         "custom_hbl_date": "custom_hawb_date",
         "custom_shipper": "custom_shipper",
-        "custom_consignee": "custom_reciver",
+        "custom_receiver": "custom_reciver",
         "custom_po_number": "custom_po_no",
         "custom_vessel": "custom_vesselflight_name",
         "custom_bl_ref_no": "custom_bl_ref_no",

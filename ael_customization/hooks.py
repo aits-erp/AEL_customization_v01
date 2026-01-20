@@ -15,13 +15,7 @@ fixtures = [
     {
         "dt": "Custom Field",
         "filters": [
-            ["module", "=", "custom_quotation"]
-        ]
-    },
-    {
-        "dt": "Custom Field",
-        "filters": [
-            ["module", "=", "custom job description"]
+            ["module", "in", ["custom_quotation", "custom job description"]]
         ]
     }
 ]
@@ -32,6 +26,7 @@ override_whitelisted_methods = {
     "erpnext.selling.doctype.sales_order.sales_order.make_sales_invoice":
         "ael_customization.custom_job_description.doctype.sales_order.sales_order.make_sales_invoice"
 }
+
 # Apps
 # ------------------
 
