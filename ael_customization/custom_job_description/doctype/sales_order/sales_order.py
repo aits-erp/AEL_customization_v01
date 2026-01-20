@@ -161,9 +161,7 @@ def map_parent_fields_so_to_si(source, target, source_parent=None):
     FIELD_MAP = {
         # -------- PORTS --------
         "custom_polaol": "custom_pol",
-        "custom_pol_aol": "custom_pol",
         "custom_podaod": "custom_pod",
-        "custom_pod_aod": "custom_pod",
 
         # -------- COUNTRY --------
         "custom_country_origin": "custom_country_of_origin",
