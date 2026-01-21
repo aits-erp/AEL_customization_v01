@@ -11,19 +11,19 @@ frappe.ui.form.on("Quotation Item", {
 
     custom_custom_rate(frm, cdt, cdn) {
         recalc_item_row(frm, locals[cdt][cdn]);
-        update_custom_total_parent(frm);
+        // update_custom_total_parent(frm);
     },
 
     custom_formula(frm, cdt, cdn) {
         let row = locals[cdt][cdn];
         toggle_custom_total_edit(frm, row);
         recalc_item_row(frm, row);
-        update_custom_total_parent(frm);
+        // update_custom_total_parent(frm);
     },
 
     custom_exchange_rate(frm, cdt, cdn) {
         recalc_item_row(frm, locals[cdt][cdn]);
-        update_custom_total_parent(frm);
+        // update_custom_total_parent(frm);
     },
 
     custom_total(frm, cdt, cdn) {
@@ -43,8 +43,18 @@ function toggle_custom_total_edit(frm, row) {
 }
 
 function recalc_item_row(frm, row) {
+    console.log("RECALC ITEM ROW CALLED", {
+        item: row.item_code,
+        formula: row.custom_formula,
+        rate: row.custom_custom_rate,
+        exch: row.custom_exchange_rate,
+        cbm: frm.doc.custom_total_cbm,
+        wt: frm.doc.custom_total_weight,
+        vwt: frm.doc.custom_total_volume_weight,
+        mode: frm.doc.custom_mode
+    });
 
-    if (!row || !row.custom_formulaa) return;
+    if (!row || !row.custom_formula) return;
 
     let mode = (frm.doc.custom_mode || "").toUpperCase();
     let user_rate = flt(row.custom_custom_rate || 0);
@@ -83,18 +93,26 @@ function recalc_manual_row(frm, row) {
     // update_custom_total_parent(frm);
 }
 
-
-
 // =======================================================
 // DIMENSION LOGIC (UNCHANGED, SAFE)
 // =======================================================
 
 frappe.ui.form.on("Quotation", {
     custom_mode(frm) {
-        (frm.doc.custom_dimension_details || []).forEach(r => {
-            calculate_dimension_row(frm, r);
-        });
-        update_dimension_totals(frm);
+        recalc_all_items(frm);
+    },
+
+    // 🔥 CRITICAL: manual entry support
+    custom_total_cbm(frm) {
+        recalc_all_items(frm);
+    },
+
+    custom_total_weight(frm) {
+        recalc_all_items(frm);
+    },
+
+    custom_total_volume_weight(frm) {
+        recalc_all_items(frm);
     }
 });
 
@@ -125,16 +143,16 @@ function calculate_dimension_row(frm, row) {
 }
 
 function update_dimension_totals(frm) {
-    console.log("UPDATE DIM TOTALS CALLED", frm.doc.custom_dimension_table);
+    console.log("UPDATE DIM TOTALS CALLED", frm.doc.custom_dimension_details);
     let total_cbm = 0,
         total_weight = 0,
         total_boxes = 0,
         total_volume_weight = 0;
 
-    (frm.doc.custom_dimension_table || []).forEach(row => {
-        total_cbm += flt(row.cbm || 0);
+    (frm.doc.custom_dimension_details || []).forEach(row => {
+        total_cbm += flt(row.custom_cbm || 0);
         total_weight += flt(row.weight_kg || 0);
-        total_boxes += flt(row.no_of_boxes || 0);
+        total_boxes += flt(row.number_of_boxes || 0);
         total_volume_weight += flt(row.volume_weight || 0);
     });
 
@@ -151,20 +169,6 @@ function update_dimension_totals(frm) {
     frm.set_value("custom_gross_weight", total_weight);
 
     recalc_all_items(frm);
-}
-
-// =======================================================
-// PARENT CUSTOM TOTAL (LIVE)
-// =======================================================
-
-function update_custom_total_parent(frm) {
-    let total = 0;
-
-    (frm.doc.items || []).forEach(item => {
-        total += flt(item.custom_total_in_inr || 0);
-    });
-
-    frm.set_value("custom_total_inr", total);
 }
 
 // =======================================================
@@ -193,6 +197,16 @@ frappe.ui.form.on("Quotation", {
     }
 });
 
+function recalc_all_items(frm) {
+    (frm.doc.items || []).forEach(row => {
+        // ONLY recalc rows using formula
+        if (row.custom_formula) {
+            recalc_item_row(frm, row);
+        }
+    });
+    frm.refresh_field("items");
+}
+
 
 function get_effective_totals(frm) {
     const has_dimensions =
@@ -215,3 +229,46 @@ function get_effective_totals(frm) {
         volume_weight: flt(frm.doc.custom_total_volume_weight || 0)
     };
 }
+
+
+// function recalc_item_row(frm, row) {
+
+//     if (!row || !row.custom_formula) return;
+
+//     let mode = (frm.doc.custom_mode || "").toUpperCase();
+//     let user_rate = flt(row.custom_custom_rate || 0);
+//     let exchange_rate = flt(row.custom_exchange_rate || 1);
+
+//     const totals = get_effective_totals(frm);
+
+//     let value = null;
+
+//     if (["SEA - LCL IMPORT", "SEA - LCL EXPORT", "SEA - FCL EXPORT", "SEA - FCL IMPORT"].includes(mode)) {
+//         value = totals.cbm * user_rate;
+//     }
+//     else if (["AIR - IMPORT", "AIR - EXPORT"].includes(mode)) {
+//         value = Math.max(totals.weight, totals.volume_weight) * user_rate;
+//     }
+
+//     if (value !== null) {
+//         row.custom_total = value;
+//     }
+
+//     row.custom_total_value = flt(row.custom_total || 0) * exchange_rate;
+//     row.custom_total_in_inr = row.custom_total_value;
+//     row.rate = row.custom_total_in_inr;
+// }
+
+// =======================================================
+// PARENT CUSTOM TOTAL (LIVE)
+// =======================================================
+
+// function update_custom_total_parent(frm) {
+//     let total = 0;
+
+//     (frm.doc.items || []).forEach(item => {
+//         total += flt(item.custom_total_in_inr || 0);
+//     });
+
+//     frm.set_value("custom_total_inr", total);
+// }

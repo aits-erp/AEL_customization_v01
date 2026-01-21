@@ -19,7 +19,7 @@ class Quotation(Document):
         self.sync_standard_rate_from_custom_total()
 
         # 5. Parent custom INR total (for reference / print)
-        self.update_custom_total_parent()
+        #self.update_custom_total_parent()
 
     # -----------------------------------------------------------
     # ITEM TOTAL CALCULATIONS (BUSINESS LOGIC)
@@ -35,13 +35,15 @@ class Quotation(Document):
             if item.custom_formula:
                 calculated = None
 
+                totals = self.get_effective_totals()
+
                 if mode in ("SEA - LCL IMPORT", "SEA - LCL EXPORT"):
-                    calculated = flt(self.custom_total_cbm) * user_rate
+                    calculated = totals["cbm"] * user_rate
 
                 elif mode in ("AIR - IMPORT", "AIR - EXPORT"):
                     chargeable_weight = max(
-                        flt(self.custom_total_weight),
-                        flt(self.custom_total_volume_weight)
+                        totals["weight"],
+                        totals["volume_weight"]
                     )
                     calculated = chargeable_weight * user_rate
 
@@ -116,11 +118,39 @@ class Quotation(Document):
     # -----------------------------------------------------------
     # PARENT CUSTOM INR TOTAL (REFERENCE)
     # -----------------------------------------------------------
-    def update_custom_total_parent(self):
-        self.custom_total_inr = sum(
-            flt(item.custom_total_in_inr or 0)
-            for item in self.items
-        )
+    # def update_custom_total_parent(self):
+    #     self.custom_total_inr = sum(
+    #         flt(item.custom_total_in_inr or 0)
+    #         for item in self.items
+    #     )
+
+    def get_effective_totals(self):
+        """
+        Decide whether to use dimension totals
+        or manually entered totals.
+        """
+
+        has_dimensions = False
+
+        for row in (self.custom_dimension_table or []):
+            if flt(row.cbm or 0) > 0 or flt(row.weight_kg or 0) > 0:
+                has_dimensions = True
+                break
+
+        if has_dimensions:
+            return {
+                "cbm": flt(self.custom_total_cbm),
+                "weight": flt(self.custom_total_weight),
+                "volume_weight": flt(self.custom_total_volume_weight),
+            }
+
+        # fallback to manual values
+        return {
+            "cbm": flt(self.custom_totals_in_cbm),
+            "weight": flt(self.custom_gross_weight),
+            "volume_weight": flt(self.custom_total_volume_weight),
+        }
+    
 
 
 def map_parent_fields(source, target, source_parent=None):

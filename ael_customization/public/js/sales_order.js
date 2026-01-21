@@ -40,41 +40,6 @@ function toggle_custom_total_edit(frm, row) {
     );
 }
 
-// function recalc_item_row(frm, row) {
-//     if (!row) return;
-
-//     let mode = (frm.doc.custom_mode || "").toUpperCase();
-//     let user_rate = flt(row.custom_custom_rate || 0);
-//     let exchange_rate = flt(row.custom_exchange_rate || 1);
-
-//     if (row.custom_formulaa) {
-//         let value = null;
-
-//         if (["SEA - LCL IMPORT", "SEA - LCL EXPORT"].includes(mode)) {
-//             value = flt(frm.doc.custom_total_cbm || 0) * user_rate;
-//         }
-//         else if (["AIR - IMPORT", "AIR - EXPORT"].includes(mode)) {
-//             let wt = Math.max(
-//                 flt(frm.doc.custom_total_weight || 0),
-//                 flt(frm.doc.custom_total_volume_weight || 0)
-//             );
-//             value = wt * user_rate;
-//         }
-
-//         if (value !== null) {
-//             row.custom_total = value;
-//         }
-//     }
-
-//     row.custom_total_value = flt(row.custom_total || 0) * exchange_rate;
-//     row.custom_total_in_inr = row.custom_total_value;
-
-//     // 🔑 ERPNext bridge
-//     row.rate = row.custom_total_in_inr;
-
-//     frm.refresh_field("items");
-// }
-
 function recalc_item_row(frm, row) {
     console.log("RECALC ITEM ROW CALLED", {
         item: row.item_code,
@@ -113,7 +78,6 @@ function recalc_item_row(frm, row) {
     row.rate = row.custom_total_in_inr;
 }
 
-
 function recalc_manual_row(frm, row) {
     let exchange_rate = flt(row.custom_exchange_rate || 1);
 
@@ -125,7 +89,6 @@ function recalc_manual_row(frm, row) {
     frm.refresh_field("items");
     // update_custom_total_parent(frm);
 }
-
 
 // =======================================================
 // DIMENSION LOGIC (UNCHANGED, SAFE)
@@ -206,25 +169,6 @@ function update_dimension_totals(frm) {
 }
 
 // =======================================================
-// PARENT TOTAL (RESTORED & LIVE)
-// =======================================================
-
-// function update_custom_total_parent(frm) {
-//     // Exit silently if field does not exist
-//     if (!frm.fields_dict.custom_total_inr) {
-//         return;
-//     }
-
-//     let total = 0;
-
-//     (frm.doc.items || []).forEach(item => {
-//         total += flt(item.custom_total_in_inr || 0);
-//     });
-
-//     frm.set_value("custom_total_inr", total);
-// }
-
-// =======================================================
 // MANUAL → CANONICAL TOTAL FIELD SYNC
 // =======================================================
 
@@ -250,8 +194,6 @@ frappe.ui.form.on("Sales Order", {
     }
 });
 
-
-
 function recalc_all_items(frm) {
     (frm.doc.items || []).forEach(row => {
         // ONLY recalc rows using formula
@@ -261,7 +203,6 @@ function recalc_all_items(frm) {
     });
     frm.refresh_field("items");
 }
-
 
 function get_effective_totals(frm) {
     const has_dimensions =
@@ -284,3 +225,59 @@ function get_effective_totals(frm) {
         volume_weight: flt(frm.doc.custom_total_volume_weight || 0)
     };
 }
+
+
+// function recalc_item_row(frm, row) {
+//     if (!row) return;
+
+//     let mode = (frm.doc.custom_mode || "").toUpperCase();
+//     let user_rate = flt(row.custom_custom_rate || 0);
+//     let exchange_rate = flt(row.custom_exchange_rate || 1);
+
+//     if (row.custom_formulaa) {
+//         let value = null;
+
+//         if (["SEA - LCL IMPORT", "SEA - LCL EXPORT"].includes(mode)) {
+//             value = flt(frm.doc.custom_total_cbm || 0) * user_rate;
+//         }
+//         else if (["AIR - IMPORT", "AIR - EXPORT"].includes(mode)) {
+//             let wt = Math.max(
+//                 flt(frm.doc.custom_total_weight || 0),
+//                 flt(frm.doc.custom_total_volume_weight || 0)
+//             );
+//             value = wt * user_rate;
+//         }
+
+//         if (value !== null) {
+//             row.custom_total = value;
+//         }
+//     }
+
+//     row.custom_total_value = flt(row.custom_total || 0) * exchange_rate;
+//     row.custom_total_in_inr = row.custom_total_value;
+
+//     // 🔑 ERPNext bridge
+//     row.rate = row.custom_total_in_inr;
+
+//     frm.refresh_field("items");
+// }
+
+// =======================================================
+// PARENT TOTAL (RESTORED & LIVE)
+// =======================================================
+
+// function update_custom_total_parent(frm) {
+//     // Exit silently if field does not exist
+//     if (!frm.fields_dict.custom_total_inr) {
+//         return;
+//     }
+
+//     let total = 0;
+
+//     (frm.doc.items || []).forEach(item => {
+//         total += flt(item.custom_total_in_inr || 0);
+//     });
+
+//     frm.set_value("custom_total_inr", total);
+// }
+
