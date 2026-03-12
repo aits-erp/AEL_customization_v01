@@ -37,6 +37,7 @@ class SalesInvoice(Document):
             
             if self.is_formula_enabled(item):
 
+                # stop calculation until inputs exist
                 if not item.custom_custom_rate or not item.custom_exchange_rate:
                     item.custom_total = 0
                     item.custom_total_value = 0
@@ -44,7 +45,7 @@ class SalesInvoice(Document):
                     item.rate = 0
                     continue
 
-                    calculated = None
+                calculated = None
 
                 if mode in ("SEA - LCL IMPORT", "SEA - LCL EXPORT"):
                     calculated = flt(self.custom_total_cbm) * user_rate
