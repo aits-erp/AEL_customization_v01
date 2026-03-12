@@ -2,10 +2,38 @@
 // Sales Order ITEM LOGIC (LIVE BUSINESS CALCULATION)
 // =======================================================
 frappe.ui.form.on("Sales Order Item", {
+    // items_add(frm, cdt, cdn) {
+    //     let row = locals[cdt][cdn];
+    //     row.custom_formulaa = 0;
+    //     frm.refresh_field("items");
+    // },
     items_add(frm, cdt, cdn) {
+
         let row = locals[cdt][cdn];
+
         row.custom_formulaa = 0;
-        frm.refresh_field("items");
+        row.rate = 0;
+        row.custom_total = 0;
+        row.custom_total_in_inr = 0;
+
+        setTimeout(() => {
+            toggle_custom_total_edit(frm, row);
+        }, 50);
+
+    },
+
+    item_code(frm, cdt, cdn) {
+
+        frappe.model.set_value(cdt, cdn, "rate", 0);
+        frappe.model.set_value(cdt, cdn, "price_list_rate", 0);
+
+        setTimeout(() => {
+
+            frappe.model.set_value(cdt, cdn, "rate", 0);
+            frappe.model.set_value(cdt, cdn, "price_list_rate", 0);
+
+        }, 300);
+
     },
 
     custom_custom_rate(frm, cdt, cdn) {
@@ -33,11 +61,20 @@ frappe.ui.form.on("Sales Order Item", {
     }
 });
 
+// function toggle_custom_total_edit(frm, row) {
+//     frm.fields_dict.items.grid.toggle_enable(
+//         "custom_total",
+//         !row.custom_formulaa
+//     );
+// }
 function toggle_custom_total_edit(frm, row) {
-    frm.fields_dict.items.grid.toggle_enable(
-        "custom_total",
-        !row.custom_formulaa
-    );
+
+    const grid_row = frm.fields_dict.items.grid.grid_rows_by_docname[row.name];
+
+    if (grid_row) {
+        grid_row.toggle_editable("custom_total", !row.custom_formulaa);
+    }
+
 }
 
 function recalc_item_row(frm, row) {
@@ -53,6 +90,11 @@ function recalc_item_row(frm, row) {
     });
 
     if (!row || !row.custom_formulaa) return;
+
+    if (!row.custom_custom_rate || !row.custom_exchange_rate) {
+        row.rate = 0;
+        return;
+    }
 
     let mode = (frm.doc.custom_mode || "").toUpperCase();
     let user_rate = flt(row.custom_custom_rate || 0);
@@ -86,7 +128,7 @@ function recalc_manual_row(frm, row) {
 
     row.rate = row.custom_total_in_inr;
 
-    frm.refresh_field("items");
+    // frm.refresh_field("items");
     // update_custom_total_parent(frm);
 }
 
@@ -201,7 +243,7 @@ function recalc_all_items(frm) {
             recalc_item_row(frm, row);
         }
     });
-    frm.refresh_field("items");
+    // frm.refresh_field("items");
 }
 
 function get_effective_totals(frm) {

@@ -29,10 +29,22 @@ class SalesInvoice(Document):
 
         for item in self.items:
             user_rate = flt(item.custom_custom_rate or 0)
-            exchange_rate = flt(item.custom_exchange_rate or 1)
+            # exchange_rate = flt(item.custom_exchange_rate or 1)
+            exchange_rate = flt(item.custom_exchange_rate)
 
+            # if self.is_formula_enabled(item):
+            #     calculated = None
             if self.is_formula_enabled(item):
-                calculated = None
+
+            # stop calculation until inputs exist
+            if not item.custom_custom_rate or not item.custom_exchange_rate:
+                item.custom_total = 0
+                item.custom_total_value = 0
+                item.custom_total_in_inr = 0
+                item.rate = 0
+                continue
+
+            calculated = None
 
                 if mode in ("SEA - LCL IMPORT", "SEA - LCL EXPORT"):
                     calculated = flt(self.custom_total_cbm) * user_rate
@@ -46,7 +58,7 @@ class SalesInvoice(Document):
 
                 if calculated is not None:
                     item.custom_total = calculated
-
+            
             item.custom_total_value = flt(item.custom_total or 0) * exchange_rate
             item.custom_total_in_inr = item.custom_total_value
 

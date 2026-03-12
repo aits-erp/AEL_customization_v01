@@ -22,18 +22,43 @@ const AIR_MODES = new Set([
 frappe.ui.form.on("Quotation Item", {
 
     items_add(frm, cdt, cdn) {
-        let row = locals[cdt][cdn];
-        row.custom_formula = 0;
-        row.rate = 0;
-    },
 
+    let row = locals[cdt][cdn];
+
+    row.custom_formula = 0;
+    row.rate = 0;
+
+    // ensure manual editing for new rows
+    setTimeout(() => {
+        toggle_custom_total_edit(frm, row);
+    }, 50);
+
+},
+
+    // item_code(frm, cdt, cdn) {
+    //     // prevent ERPNext auto price fetch
+    //     setTimeout(() => {
+    //         frappe.model.set_value(cdt, cdn, "rate", 0);
+    //         frappe.model.set_value(cdt, cdn, "price_list_rate", 0);
+    //     }, 100);
+    // },
     item_code(frm, cdt, cdn) {
-        // prevent ERPNext auto price fetch
-        setTimeout(() => {
-            frappe.model.set_value(cdt, cdn, "rate", 0);
-            frappe.model.set_value(cdt, cdn, "price_list_rate", 0);
-        }, 100);
-    },
+
+    let row = locals[cdt][cdn];
+
+    // always reset rate when item selected
+    frappe.model.set_value(cdt, cdn, "rate", 0);
+    frappe.model.set_value(cdt, cdn, "price_list_rate", 0);
+
+    // delay override to defeat ERPNext price fetch
+    setTimeout(() => {
+
+        frappe.model.set_value(cdt, cdn, "rate", 0);
+        frappe.model.set_value(cdt, cdn, "price_list_rate", 0);
+
+    }, 300);
+
+},
 
     custom_custom_rate(frm, cdt, cdn) {
         recalc_item_row(frm, locals[cdt][cdn]);
