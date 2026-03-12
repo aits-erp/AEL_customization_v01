@@ -19,7 +19,14 @@ frappe.ui.form.on("Sales Invoice Item", {
 
             setTimeout(() => {
                 toggle_custom_total_edit(frm, row);
-            }, 50);
+            }, 120);
+
+        },
+
+        form_render(frm, cdt, cdn) {
+
+            let row = locals[cdt][cdn];
+            toggle_custom_total_edit(frm, row);
 
         },
 
@@ -72,9 +79,13 @@ function toggle_custom_total_edit(frm, row) {
 
     const grid_row = frm.fields_dict.items.grid.grid_rows_by_docname[row.name];
 
-    if (grid_row) {
-        grid_row.toggle_editable("custom_total", !row.custom_formulaa);
-    }
+    if (!grid_row) return;
+
+    grid_row.set_field_property(
+        "custom_total",
+        "read_only",
+        row.custom_formulaa ? 1 : 0
+    );
 
 }
 
@@ -119,6 +130,8 @@ function recalc_item_row(frm, row) {
     if (!row || !row.custom_formulaa) return;
 
     if (!row.custom_custom_rate || !row.custom_exchange_rate) {
+        row.custom_total = 0;
+        row.custom_total_in_inr = 0;
         row.rate = 0;
         return;
     }
@@ -164,13 +177,24 @@ function recalc_manual_row(frm, row) {
 // =======================================================
 // DIMENSION LOGIC (UNCHANGED, SAFE)
 // =======================================================
-
 frappe.ui.form.on("Sales Invoice", {
+
+    refresh(frm) {
+
+        setTimeout(() => {
+
+            (frm.doc.items || []).forEach(row => {
+                toggle_custom_total_edit(frm, row);
+            });
+
+        }, 150);
+
+    },
+
     custom_mode(frm) {
         recalc_all_items(frm);
     },
 
-    // 🔥 CRITICAL: manual entry support
     custom_total_cbm(frm) {
         recalc_all_items(frm);
     },
@@ -181,10 +205,29 @@ frappe.ui.form.on("Sales Invoice", {
 
     custom_total_volume_weight(frm) {
         recalc_all_items(frm);
+    },
+
+    custom_totals_in_cbm(frm) {
+
+        const cbm = flt(frm.doc.custom_totals_in_cbm || 0);
+        frm.set_value("custom_total_cbm", cbm);
+
+        recalc_all_items(frm);
+
+    },
+
+    custom_gross_weight(frm) {
+
+        const wt = flt(frm.doc.custom_gross_weight || 0);
+        frm.set_value("custom_total_weight", wt);
+
+        recalc_all_items(frm);
+
     }
+
 });
 
-frappe.ui.form.on("SI Dimension details", {
+frappe.ui.form.on("SI Dimension Details", {
     no_of_boxes(frm, cdt, cdn) { calculate_dimension_row(frm, locals[cdt][cdn]); },
     length_cm(frm, cdt, cdn) { calculate_dimension_row(frm, locals[cdt][cdn]); },
     breadth_cm(frm, cdt, cdn) { calculate_dimension_row(frm, locals[cdt][cdn]); },
@@ -198,16 +241,16 @@ function calculate_dimension_row(frm, row) {
     let H = flt(row.height_cm || 0);
     let boxes = flt(row.no_of_boxes || 1);
 
-    row.cbm = (L * B * H / 1000000.0) * boxes;
+    row.cbm = flt((L * B * H / 1000000.0) * boxes);
 
     let divisor = (frm.doc.custom_mode || "").toUpperCase().startsWith("COURIER")
         ? 5000
         : 6000;
 
-    row.volume_weight = (L * B * H / divisor) * boxes;
+    row.volume_weight = flt((L * B * H / divisor) * boxes);
 
     update_dimension_totals(frm);
-    frm.refresh_field("custom_dimension_details");
+    // frm.refresh_field("custom_dimension_details");
 }
 
 function update_dimension_totals(frm) {
@@ -257,33 +300,6 @@ function update_dimension_totals(frm) {
 
 //     frm.set_value("custom_total_inr", total);
 // }
-
-// =======================================================
-// MANUAL → CANONICAL TOTAL FIELD SYNC
-// =======================================================
-
-frappe.ui.form.on("Sales Invoice", {
-    custom_totals_in_cbm(frm) {
-        const cbm = flt(frm.doc.custom_totals_in_cbm || 0);
-        frm.set_value("custom_total_cbm", cbm);
-
-        // 🔑 FORCE recalc AFTER mapping
-        recalc_all_items(frm);
-    },
-
-    custom_gross_weight(frm) {
-        const wt = flt(frm.doc.custom_gross_weight || 0);
-        frm.set_value("custom_total_weight", wt);
-
-        // 🔑 FORCE recalc AFTER mapping
-        recalc_all_items(frm);
-    },
-
-    custom_mode(frm) {
-        recalc_all_items(frm);
-    }
-});
-
 
 
 function recalc_all_items(frm) {

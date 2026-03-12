@@ -18,7 +18,14 @@ frappe.ui.form.on("Sales Order Item", {
 
         setTimeout(() => {
             toggle_custom_total_edit(frm, row);
-        }, 50);
+        }, 70);
+
+    },
+
+    form_render(frm, cdt, cdn) {
+
+        let row = locals[cdt][cdn];
+        toggle_custom_total_edit(frm, row);
 
     },
 
@@ -71,9 +78,11 @@ function toggle_custom_total_edit(frm, row) {
 
     const grid_row = frm.fields_dict.items.grid.grid_rows_by_docname[row.name];
 
-    if (grid_row) {
-        grid_row.toggle_editable("custom_total", !row.custom_formulaa);
-    }
+    if (!grid_row) return;
+
+    const editable = !row.custom_formulaa;
+
+    grid_row.toggle_editable("custom_total", editable);
 
 }
 
@@ -137,6 +146,18 @@ function recalc_manual_row(frm, row) {
 // =======================================================
 
 frappe.ui.form.on("Sales Order", {
+        refresh(frm) {
+
+        setTimeout(() => {
+
+            (frm.doc.items || []).forEach(row => {
+                toggle_custom_total_edit(frm, row);
+            });
+
+        }, 120);
+
+    },
+
     custom_mode(frm) {
         recalc_all_items(frm);
     },

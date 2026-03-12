@@ -29,8 +29,7 @@ class SalesInvoice(Document):
 
         for item in self.items:
             user_rate = flt(item.custom_custom_rate or 0)
-            # exchange_rate = flt(item.custom_exchange_rate or 1)
-            exchange_rate = flt(item.custom_exchange_rate)
+            exchange_rate = flt(item.custom_exchange_rate or 1)
 
             # if self.is_formula_enabled(item):
             #     calculated = None

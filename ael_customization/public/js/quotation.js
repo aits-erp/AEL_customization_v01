@@ -21,17 +21,25 @@ const AIR_MODES = new Set([
 
 frappe.ui.form.on("Quotation Item", {
 
+        form_render(frm, cdt, cdn) {
+
+        let row = locals[cdt][cdn];
+        toggle_custom_total_edit(frm, row);
+
+    },
+
     items_add(frm, cdt, cdn) {
 
     let row = locals[cdt][cdn];
 
     row.custom_formula = 0;
     row.rate = 0;
+    row.custom_total = 0;
+    row.custom_total_in_inr = 0;
 
-    // ensure manual editing for new rows
     setTimeout(() => {
         toggle_custom_total_edit(frm, row);
-    }, 50);
+    }, 100);
 
 },
 
@@ -92,9 +100,11 @@ function toggle_custom_total_edit(frm, row) {
 
     const grid_row = frm.fields_dict.items.grid.grid_rows_by_docname[row.name];
 
-    if (grid_row) {
-        grid_row.toggle_editable("custom_total", !row.custom_formula);
-    }
+    if (!grid_row) return;
+
+    const editable = !row.custom_formula;
+
+    grid_row.toggle_editable("custom_total", editable);
 
 }
 
@@ -241,6 +251,17 @@ function update_dimension_totals(frm) {
 // =======================================================
 
 frappe.ui.form.on("Quotation", {
+        refresh(frm) {
+
+        setTimeout(() => {
+
+            (frm.doc.items || []).forEach(row => {
+                toggle_custom_total_edit(frm, row);
+            });
+
+        }, 100);
+
+    },
 
     custom_mode(frm) {
         recalc_all_items(frm);
