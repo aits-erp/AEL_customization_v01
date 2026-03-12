@@ -18,7 +18,7 @@ frappe.ui.form.on("Sales Order Item", {
 
         setTimeout(() => {
             toggle_custom_total_edit(frm, row);
-        }, 70);
+        }, 120);
 
     },
 
@@ -80,9 +80,11 @@ function toggle_custom_total_edit(frm, row) {
 
     if (!grid_row) return;
 
-    const editable = !row.custom_formulaa;
-
-    grid_row.toggle_editable("custom_total", editable);
+    grid_row.set_field_property(
+        "custom_total",
+        "read_only",
+        row.custom_formulaa ? 1 : 0
+    );
 
 }
 
