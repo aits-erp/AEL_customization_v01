@@ -32,8 +32,7 @@ class Quotation(Document):
         for item in self.items:
 
             user_rate = flt(item.custom_custom_rate)
-            # exchange_rate = flt(item.custom_exchange_rate or 1)
-            exchange_rate = flt(item.custom_exchange_rate)
+            exchange_rate = flt(item.custom_exchange_rate or 1)
             
             # ---------- FORMULA PATH ----------
             # if item.custom_formula:
@@ -42,7 +41,7 @@ class Quotation(Document):
             if item.custom_formula:
 
                 # stop calculation if required fields missing
-                if not item.custom_custom_rate or not item.custom_exchange_rate:
+                if not item.custom_custom_rate:
                     item.custom_total = 0
                     item.custom_total_value = 0
                     item.custom_total_in_inr = 0
@@ -51,7 +50,12 @@ class Quotation(Document):
 
                 calculated = None
 
-                if mode in ("SEA - LCL IMPORT", "SEA - LCL EXPORT"):
+                if mode in (
+                    "SEA - LCL IMPORT",
+                    "SEA - LCL EXPORT",
+                    "SEA - FCL IMPORT",
+                    "SEA - FCL EXPORT"
+                ):
                     calculated = totals["cbm"] * user_rate
 
                 elif mode in ("AIR - IMPORT", "AIR - EXPORT"):
