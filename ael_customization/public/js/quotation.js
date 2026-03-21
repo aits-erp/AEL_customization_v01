@@ -52,35 +52,54 @@ frappe.ui.form.on("Quotation Item", {
     // },
     item_code(frm, cdt, cdn) {
 
-    let row = locals[cdt][cdn];
+        let row = locals[cdt][cdn];
 
-    // always reset rate when item selected
-    frappe.model.set_value(cdt, cdn, "rate", 0);
-    frappe.model.set_value(cdt, cdn, "price_list_rate", 0);
-
-    // delay override to defeat ERPNext price fetch
-    setTimeout(() => {
-
+        // always reset rate when item selected
         frappe.model.set_value(cdt, cdn, "rate", 0);
         frappe.model.set_value(cdt, cdn, "price_list_rate", 0);
 
-    }, 300);
+        // delay override to defeat ERPNext price fetch
+        setTimeout(() => {
 
-},
+            frappe.model.set_value(cdt, cdn, "rate", 0);
+            frappe.model.set_value(cdt, cdn, "price_list_rate", 0);
+
+        }, 300);
+
+    },
 
     custom_custom_rate(frm, cdt, cdn) {
-        recalc_item_row(frm, locals[cdt][cdn]);
+        let row = locals[cdt][cdn];
+
+        if (row.custom_formula) {
+            recalc_item_row(frm, row);
+        } else {
+            recalc_manual_row(frm, row);
+        }
+    },
+
+    custom_exchange_rate(frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
+
+        if (row.custom_formula) {
+            recalc_item_row(frm, row);
+        } else {
+            recalc_manual_row(frm, row);
+        }
     },
 
     custom_formula(frm, cdt, cdn) {
         let row = locals[cdt][cdn];
+        
         toggle_custom_total_edit(frm, row);
-        recalc_item_row(frm, row);
+
+        if (row.custom_formula) {
+            recalc_item_row(frm, row);
+        } else {
+            recalc_manual_row(frm, row);
+        }
     },
 
-    custom_exchange_rate(frm, cdt, cdn) {
-        recalc_item_row(frm, locals[cdt][cdn]);
-    },
 
     custom_total(frm, cdt, cdn) {
         let row = locals[cdt][cdn];
@@ -118,8 +137,16 @@ function recalc_item_row(frm, row) {
     if (!row || !row.custom_formula) return;
 
     let mode = (frm.doc.custom_mode || "").toUpperCase();
-    let user_rate = flt(row.custom_custom_rate || 0);
-    let exchange_rate = flt(row.custom_exchange_rate || 1);
+    let user_rate = flt(row.custom_custom_rate);
+    let exchange_rate = flt(row.custom_exchange_rate);
+
+    if (!user_rate || !exchange_rate) {
+        frappe.model.set_value(row.doctype, row.name, "custom_total", 0);
+        frappe.model.set_value(row.doctype, row.name, "custom_total_value", 0);
+        frappe.model.set_value(row.doctype, row.name, "custom_total_in_inr", 0);
+        frappe.model.set_value(row.doctype, row.name, "rate", 0);
+        return;
+    }
 
     const totals = get_effective_totals(frm);
 
@@ -133,12 +160,14 @@ function recalc_item_row(frm, row) {
     }
 
     if (value !== null) {
-        row.custom_total = value;
+        frappe.model.set_value(row.doctype, row.name, "custom_total", value);
     }
 
-    row.custom_total_value = flt(row.custom_total || 0) * exchange_rate;
-    row.custom_total_in_inr = row.custom_total_value;
-    row.rate = row.custom_total_in_inr;
+    let total_value = flt(value) * exchange_rate;
+
+    frappe.model.set_value(row.doctype, row.name, "custom_total_value", total_value);
+    frappe.model.set_value(row.doctype, row.name, "custom_total_in_inr", total_value);
+    frappe.model.set_value(row.doctype, row.name, "rate", total_value);
 
 }
 
@@ -149,12 +178,23 @@ function recalc_item_row(frm, row) {
 
 function recalc_manual_row(frm, row) {
 
-    let exchange_rate = flt(row.custom_exchange_rate || 1);
+    let user_rate = flt(row.custom_custom_rate);
+    let exchange_rate = flt(row.custom_exchange_rate);
 
-    row.custom_total_value = flt(row.custom_total || 0) * exchange_rate;
-    row.custom_total_in_inr = row.custom_total_value;
-    row.rate = row.custom_total_in_inr;
+    if (!user_rate || !exchange_rate) {
+        return;
+    }
 
+    // 🔥 NEW LOGIC
+    let total = user_rate;
+
+    frappe.model.set_value(row.doctype, row.name, "custom_total", total);
+
+    let total_value = total * exchange_rate;
+
+    frappe.model.set_value(row.doctype, row.name, "custom_total_value", total_value);
+    frappe.model.set_value(row.doctype, row.name, "custom_total_in_inr", total_value);
+    frappe.model.set_value(row.doctype, row.name, "rate", total_value);
 }
 
 

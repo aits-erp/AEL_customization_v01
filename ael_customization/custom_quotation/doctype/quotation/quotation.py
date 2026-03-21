@@ -32,7 +32,7 @@ class Quotation(Document):
         for item in self.items:
 
             user_rate = flt(item.custom_custom_rate)
-            exchange_rate = flt(item.custom_exchange_rate or 1)
+            exchange_rate = flt(item.custom_exchange_rate)
             
             # ---------- FORMULA PATH ----------
             # if item.custom_formula:
@@ -41,7 +41,7 @@ class Quotation(Document):
             if item.custom_formula:
 
                 # stop calculation if required fields missing
-                if not item.custom_custom_rate:
+                if not item.custom_custom_rate or not item.custom_exchange_rate:
                     item.custom_total = 0
                     item.custom_total_value = 0
                     item.custom_total_in_inr = 0
