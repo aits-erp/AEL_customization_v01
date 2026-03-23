@@ -118,8 +118,10 @@ class SalesInvoice(Document):
 
             # Do not force rate if value is zero
             if final_inr:
-                item.rate = final_inr
-
+                # item.rate = final_inr
+                qty = item.qty or 1
+                item.rate = final_inr / qty
+                
     # -----------------------------------------------------------
     # PARENT CUSTOM INR TOTAL (REFERENCE)
     # -----------------------------------------------------------

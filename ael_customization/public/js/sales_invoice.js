@@ -12,6 +12,8 @@ frappe.ui.form.on("Sales Invoice Item", {
 
             let row = locals[cdt][cdn];
 
+            if (frm.__in_paste || frm.__in_import) return;
+
             row.custom_formulaa = 0;
             row.rate = 0;
             row.custom_total = 0;
@@ -35,12 +37,12 @@ frappe.ui.form.on("Sales Invoice Item", {
         frappe.model.set_value(cdt, cdn, "rate", 0);
         frappe.model.set_value(cdt, cdn, "price_list_rate", 0);
 
-        setTimeout(() => {
+        // setTimeout(() => {
 
             frappe.model.set_value(cdt, cdn, "rate", 0);
             frappe.model.set_value(cdt, cdn, "price_list_rate", 0);
 
-        }, 300);
+        // }, 300);
 
     },
 
@@ -258,7 +260,12 @@ function recalc_all_items(frm) {
         // if (row.custom_formulaa) {
         //     recalc_item_row(frm, row);
         // }
-        calculate_row(frm, row);
+        
+        if (!(frm.__in_paste || frm.__in_import)) {
+            calculate_row(frm, row);
+        }
+        // calculate_row(frm, row);
+
 
     });
     // frm.refresh_field("items");
@@ -322,7 +329,11 @@ function calculate_row(frm, row) {
     else {
 
         // auto-fill ONLY if empty
-        if (!total && user_rate) {
+        // if (!total && user_rate) {
+        //     total = user_rate;
+        //     frappe.model.set_value(row.doctype, row.name, "custom_total", total);
+        // }
+        if (!total && user_rate && !(frm.__in_paste || frm.__in_import)) {
             total = user_rate;
             frappe.model.set_value(row.doctype, row.name, "custom_total", total);
         }
@@ -337,5 +348,13 @@ function calculate_row(frm, row) {
 
     frappe.model.set_value(row.doctype, row.name, "custom_total_value", total_value);
     frappe.model.set_value(row.doctype, row.name, "custom_total_in_inr", total_value);
-    frappe.model.set_value(row.doctype, row.name, "rate", total_value);
+    // frappe.model.set_value(row.doctype, row.name, "rate", total_value);
+
+    let qty = flt(row.qty || 1);
+    let new_rate = total_value / qty;
+
+    // ONLY update rate if formula mode OR rate is empty
+    if ((row.custom_formulaa || !row.rate) && !(frm.__in_paste || frm.__in_import)) {
+        frappe.model.set_value(row.doctype, row.name, "rate", new_rate);
+    }
 }
