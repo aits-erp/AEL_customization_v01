@@ -16,7 +16,6 @@ const AIR_MODES = new Set([
     "COURIER - Export"
 ]);
 
-
 // =======================================================
 // QUOTATION ITEM LOGIC
 // =======================================================
@@ -45,13 +44,6 @@ frappe.ui.form.on("Quotation Item", {
 
 },
 
-    // item_code(frm, cdt, cdn) {
-    //     // prevent ERPNext auto price fetch
-    //     setTimeout(() => {
-    //         frappe.model.set_value(cdt, cdn, "rate", 0);
-    //         frappe.model.set_value(cdt, cdn, "price_list_rate", 0);
-    //     }, 100);
-    // },
     item_code(frm, cdt, cdn) {
 
         let row = locals[cdt][cdn];
