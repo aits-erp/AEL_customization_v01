@@ -45,26 +45,23 @@ frappe.ui.form.on("Sales Invoice Item", {
     },
 
     custom_custom_rate(frm, cdt, cdn) {
-        recalc_item_row(frm, locals[cdt][cdn]);
-        //update_custom_total_parent(frm);
+        calculate_row(frm, locals[cdt][cdn]);
+    },
+
+    custom_exchange_rate(frm, cdt, cdn) {
+        calculate_row(frm, locals[cdt][cdn]);
     },
 
     custom_formulaa(frm, cdt, cdn) {
         let row = locals[cdt][cdn];
         toggle_custom_total_edit(frm, row);
-        recalc_item_row(frm, row);
-        // update_custom_total_parent(frm);
-    },
-
-    custom_exchange_rate(frm, cdt, cdn) {
-        recalc_item_row(frm, locals[cdt][cdn]);
-        // update_custom_total_parent(frm);
+        calculate_row(frm, row);
     },
 
     custom_total(frm, cdt, cdn) {
         let row = locals[cdt][cdn];
         if (!row.custom_formulaa) {
-            recalc_manual_row(frm, row);
+            calculate_row(frm, row);
         }
     }
 });
@@ -124,54 +121,7 @@ function toggle_custom_total_edit(frm, row) {
 //     frm.refresh_field("items");
 // }
 
-function recalc_item_row(frm, row) {
 
-    // if (!row || !row.custom_formulaa) return;
-    if (!row || !row.custom_formulaa) return;
-
-    if (!row.custom_custom_rate || !row.custom_exchange_rate) {
-        row.custom_total = 0;
-        row.custom_total_in_inr = 0;
-        row.rate = 0;
-        return;
-    }
-
-    let mode = (frm.doc.custom_mode || "").toUpperCase();
-    let user_rate = flt(row.custom_custom_rate || 0);
-    let exchange_rate = flt(row.custom_exchange_rate || 1);
-
-    const totals = get_effective_totals(frm);
-
-    let value = null;
-
-    if (["SEA - LCL IMPORT", "SEA - LCL EXPORT", "SEA - FCL EXPORT", "SEA - FCL IMPORT"].includes(mode)) {
-        value = totals.cbm * user_rate;
-    }
-    else if (["AIR - IMPORT", "AIR - EXPORT"].includes(mode)) {
-        value = Math.max(totals.weight, totals.volume_weight) * user_rate;
-    }
-
-    if (value !== null) {
-        row.custom_total = value;
-    }
-
-    row.custom_total_value = flt(row.custom_total || 0) * exchange_rate;
-    row.custom_total_in_inr = row.custom_total_value;
-    row.rate = row.custom_total_in_inr;
-}
-
-
-function recalc_manual_row(frm, row) {
-    let exchange_rate = flt(row.custom_exchange_rate || 1);
-
-    row.custom_total_value = flt(row.custom_total || 0) * exchange_rate;
-    row.custom_total_in_inr = row.custom_total_value;
-
-    row.rate = row.custom_total_in_inr;
-
-    // frm.refresh_field("items");
-    // update_custom_total_parent(frm);
-}
 
 
 // =======================================================
@@ -305,9 +255,11 @@ function update_dimension_totals(frm) {
 function recalc_all_items(frm) {
     (frm.doc.items || []).forEach(row => {
         // ONLY recalc rows using formula
-        if (row.custom_formulaa) {
-            recalc_item_row(frm, row);
-        }
+        // if (row.custom_formulaa) {
+        //     recalc_item_row(frm, row);
+        // }
+        calculate_row(frm, row);
+
     });
     // frm.refresh_field("items");
 }
@@ -333,4 +285,57 @@ function get_effective_totals(frm) {
         weight: flt(frm.doc.custom_gross_weight || 0),
         volume_weight: flt(frm.doc.custom_total_volume_weight || 0)
     };
+}
+
+
+function calculate_row(frm, row) {
+
+    let user_rate = flt(row.custom_custom_rate);
+    let exchange_rate = flt(row.custom_exchange_rate);
+    let total = flt(row.custom_total);
+
+    if (exchange_rate === null || exchange_rate === undefined) return;
+
+    let mode = (frm.doc.custom_mode || "").toUpperCase();
+    let totals = get_effective_totals(frm);
+
+    // =============================
+    // FORMULA MODE
+    // =============================
+    if (row.custom_formulaa) {
+
+        if (!user_rate) return;
+
+        if (["SEA - LCL IMPORT", "SEA - LCL EXPORT", "SEA - FCL IMPORT", "SEA - FCL EXPORT"].includes(mode)) {
+            total = totals.cbm * user_rate;
+        }
+        else if (["AIR - IMPORT", "AIR - EXPORT", "COURIER - Import", "COURIER - Export"].includes(mode)) {
+            total = Math.max(totals.weight, totals.volume_weight) * user_rate;
+        }
+
+        frappe.model.set_value(row.doctype, row.name, "custom_total", total);
+    }
+
+    // =============================
+    // MANUAL MODE
+    // =============================
+    else {
+
+        // auto-fill ONLY if empty
+        if (!total && user_rate) {
+            total = user_rate;
+            frappe.model.set_value(row.doctype, row.name, "custom_total", total);
+        }
+
+        if (!total) return;
+    }
+
+    // =============================
+    // FINAL CALC
+    // =============================
+    let total_value = total * exchange_rate;
+
+    frappe.model.set_value(row.doctype, row.name, "custom_total_value", total_value);
+    frappe.model.set_value(row.doctype, row.name, "custom_total_in_inr", total_value);
+    frappe.model.set_value(row.doctype, row.name, "rate", total_value);
 }

@@ -11,7 +11,9 @@ const SEA_MODES = new Set([
 
 const AIR_MODES = new Set([
     "AIR - IMPORT",
-    "AIR - EXPORT"
+    "AIR - EXPORT",
+    "COURIER - Import", 
+    "COURIER - Export"
 ]);
 
 
@@ -72,9 +74,9 @@ frappe.ui.form.on("Quotation Item", {
         let row = locals[cdt][cdn];
 
         if (row.custom_formula) {
-            recalc_item_row(frm, row);
+            calculate_row(frm, locals[cdt][cdn]);
         } else {
-            recalc_manual_row(frm, row);
+            calculate_row(frm, locals[cdt][cdn]);
         }
     },
 
@@ -82,9 +84,9 @@ frappe.ui.form.on("Quotation Item", {
         let row = locals[cdt][cdn];
 
         if (row.custom_formula) {
-            recalc_item_row(frm, row);
+            calculate_row(frm, locals[cdt][cdn]);
         } else {
-            recalc_manual_row(frm, row);
+            calculate_row(frm, locals[cdt][cdn]);
         }
     },
 
@@ -94,9 +96,9 @@ frappe.ui.form.on("Quotation Item", {
         toggle_custom_total_edit(frm, row);
 
         if (row.custom_formula) {
-            recalc_item_row(frm, row);
+            calculate_row(frm, locals[cdt][cdn]);
         } else {
-            recalc_manual_row(frm, row);
+            calculate_row(frm, locals[cdt][cdn]);
         }
     },
 
@@ -104,7 +106,7 @@ frappe.ui.form.on("Quotation Item", {
     custom_total(frm, cdt, cdn) {
         let row = locals[cdt][cdn];
         if (!row.custom_formula) {
-            recalc_manual_row(frm, row);
+            calculate_row(frm, locals[cdt][cdn]);
         }
     }
 
@@ -132,71 +134,71 @@ function toggle_custom_total_edit(frm, row) {
 // ITEM FORMULA CALCULATION
 // =======================================================
 
-function recalc_item_row(frm, row) {
+// function recalc_item_row(frm, row) {
 
-    if (!row || !row.custom_formula) return;
+//     if (!row || !row.custom_formula) return;
 
-    let mode = (frm.doc.custom_mode || "").toUpperCase();
-    let user_rate = flt(row.custom_custom_rate);
-    let exchange_rate = flt(row.custom_exchange_rate);
+//     let mode = (frm.doc.custom_mode || "").toUpperCase();
+//     let user_rate = flt(row.custom_custom_rate);
+//     let exchange_rate = flt(row.custom_exchange_rate);
 
-    if (!user_rate || !exchange_rate) {
-        frappe.model.set_value(row.doctype, row.name, "custom_total", 0);
-        frappe.model.set_value(row.doctype, row.name, "custom_total_value", 0);
-        frappe.model.set_value(row.doctype, row.name, "custom_total_in_inr", 0);
-        frappe.model.set_value(row.doctype, row.name, "rate", 0);
-        return;
-    }
+//     if (!user_rate || !exchange_rate) {
+//         frappe.model.set_value(row.doctype, row.name, "custom_total", 0);
+//         frappe.model.set_value(row.doctype, row.name, "custom_total_value", 0);
+//         frappe.model.set_value(row.doctype, row.name, "custom_total_in_inr", 0);
+//         frappe.model.set_value(row.doctype, row.name, "rate", 0);
+//         return;
+//     }
 
-    const totals = get_effective_totals(frm);
+//     const totals = get_effective_totals(frm);
 
-    let value = null;
+//     let value = null;
 
-    if (SEA_MODES.has(mode)) {
-        value = totals.cbm * user_rate;
-    }
-    else if (AIR_MODES.has(mode)) {
-        value = Math.max(totals.weight, totals.volume_weight) * user_rate;
-    }
+//     if (SEA_MODES.has(mode)) {
+//         value = totals.cbm * user_rate;
+//     }
+//     else if (AIR_MODES.has(mode)) {
+//         value = Math.max(totals.weight, totals.volume_weight) * user_rate;
+//     }
 
-    if (value !== null) {
-        frappe.model.set_value(row.doctype, row.name, "custom_total", value);
-    }
+//     if (value !== null) {
+//         frappe.model.set_value(row.doctype, row.name, "custom_total", value);
+//     }
 
-    let total_value = flt(value) * exchange_rate;
+//     let total_value = flt(value) * exchange_rate;
 
-    frappe.model.set_value(row.doctype, row.name, "custom_total_value", total_value);
-    frappe.model.set_value(row.doctype, row.name, "custom_total_in_inr", total_value);
-    frappe.model.set_value(row.doctype, row.name, "rate", total_value);
+//     frappe.model.set_value(row.doctype, row.name, "custom_total_value", total_value);
+//     frappe.model.set_value(row.doctype, row.name, "custom_total_in_inr", total_value);
+//     frappe.model.set_value(row.doctype, row.name, "rate", total_value);
 
-}
+// }
 
 
 // =======================================================
 // MANUAL CALCULATION
 // =======================================================
+// function recalc_manual_row(frm, row) {
 
-function recalc_manual_row(frm, row) {
+//     let user_rate = flt(row.custom_custom_rate);
+//     let exchange_rate = flt(row.custom_exchange_rate);
+//     let current_total = flt(row.custom_total);
 
-    let user_rate = flt(row.custom_custom_rate);
-    let exchange_rate = flt(row.custom_exchange_rate);
+//     if (!exchange_rate) return;
 
-    if (!user_rate || !exchange_rate) {
-        return;
-    }
+//     // ✅ AUTO-FILL ONLY IF TOTAL IS EMPTY OR ZERO
+//     if (!current_total && user_rate) {
+//         frappe.model.set_value(row.doctype, row.name, "custom_total", user_rate);
+//         current_total = user_rate;
+//     }
 
-    // 🔥 NEW LOGIC
-    let total = user_rate;
+//     if (!current_total) return;
 
-    frappe.model.set_value(row.doctype, row.name, "custom_total", total);
+//     let total_value = current_total * exchange_rate;
 
-    let total_value = total * exchange_rate;
-
-    frappe.model.set_value(row.doctype, row.name, "custom_total_value", total_value);
-    frappe.model.set_value(row.doctype, row.name, "custom_total_in_inr", total_value);
-    frappe.model.set_value(row.doctype, row.name, "rate", total_value);
-}
-
+//     frappe.model.set_value(row.doctype, row.name, "custom_total_value", total_value);
+//     frappe.model.set_value(row.doctype, row.name, "custom_total_in_inr", total_value);
+//     frappe.model.set_value(row.doctype, row.name, "rate", total_value);
+// }
 
 // =======================================================
 // DIMENSION TABLE EVENTS
@@ -384,4 +386,60 @@ function get_effective_totals(frm) {
         volume_weight: flt(frm.doc.custom_total_volume_weight || 0)
     };
 
+}
+
+
+// =======================================================
+// FINAL CENTRALIZED CALCULATION FUNCTION
+// =======================================================
+function calculate_row(frm, row) {
+
+    let user_rate = flt(row.custom_custom_rate);
+    let exchange_rate = flt(row.custom_exchange_rate);
+    let total = flt(row.custom_total);
+
+    // allow 0 exchange but not empty
+    if (exchange_rate === null || exchange_rate === undefined) return;
+
+    // =============================
+    // FORMULA MODE
+    // =============================
+    if (row.custom_formula) {
+
+        if (!user_rate) return;
+
+        let totals = get_effective_totals(frm);
+        let mode = (frm.doc.custom_mode || "").toUpperCase();
+
+        if (SEA_MODES.has(mode)) {
+            total = totals.cbm * user_rate;
+        } else if (AIR_MODES.has(mode)) {
+            total = Math.max(totals.weight, totals.volume_weight) * user_rate;
+        }
+
+        frappe.model.set_value(row.doctype, row.name, "custom_total", total);
+    }
+
+    // =============================
+    // MANUAL MODE
+    // =============================
+    else {
+
+        // auto-fill only if empty
+        if (!total && user_rate) {
+            total = user_rate;
+            frappe.model.set_value(row.doctype, row.name, "custom_total", total);
+        }
+
+        if (!total) return;
+    }
+
+    // =============================
+    // FINAL CALC
+    // =============================
+    let total_value = total * exchange_rate;
+
+    frappe.model.set_value(row.doctype, row.name, "custom_total_value", total_value);
+    frappe.model.set_value(row.doctype, row.name, "custom_total_in_inr", total_value);
+    frappe.model.set_value(row.doctype, row.name, "rate", total_value);
 }

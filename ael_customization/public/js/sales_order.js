@@ -43,21 +43,36 @@ frappe.ui.form.on("Sales Order Item", {
 
     },
 
-    custom_custom_rate(frm, cdt, cdn) {
-        recalc_item_row(frm, locals[cdt][cdn]);
-        //update_custom_total_parent(frm);
-    },
-
     custom_formulaa(frm, cdt, cdn) {
         let row = locals[cdt][cdn];
+
         toggle_custom_total_edit(frm, row);
-        recalc_item_row(frm, row);
-        // update_custom_total_parent(frm);
+
+        if (row.custom_formulaa) {
+            recalc_item_row(frm, row);
+        } else {
+            recalc_manual_row(frm, row);
+        }
+    },
+
+    custom_custom_rate(frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
+
+        if (row.custom_formulaa) {
+            recalc_item_row(frm, row);
+        } else {
+            recalc_manual_row(frm, row);
+        }
     },
 
     custom_exchange_rate(frm, cdt, cdn) {
-        recalc_item_row(frm, locals[cdt][cdn]);
-        // update_custom_total_parent(frm);
+        let row = locals[cdt][cdn];
+
+        if (row.custom_formulaa) {
+            recalc_item_row(frm, row);
+        } else {
+            recalc_manual_row(frm, row);
+        }
     },
 
     custom_total(frm, cdt, cdn) {
@@ -74,6 +89,7 @@ frappe.ui.form.on("Sales Order Item", {
 //         !row.custom_formulaa
 //     );
 // }
+
 function toggle_custom_total_edit(frm, row) {
 
     const grid_row = frm.fields_dict.items.grid.grid_rows_by_docname[row.name];
@@ -102,14 +118,15 @@ function recalc_item_row(frm, row) {
 
     if (!row || !row.custom_formulaa) return;
 
-    if (!row.custom_custom_rate || !row.custom_exchange_rate) {
-        row.rate = 0;
-        return;
-    }
+    let user_rate = flt(row.custom_custom_rate);
+    let exchange_rate = flt(row.custom_exchange_rate);
+
+    if (!user_rate) return;
+
+    // allow exchange = 0 but not undefined
+    if (exchange_rate === null || exchange_rate === undefined) return;
 
     let mode = (frm.doc.custom_mode || "").toUpperCase();
-    let user_rate = flt(row.custom_custom_rate || 0);
-    let exchange_rate = flt(row.custom_exchange_rate || 1);
 
     const totals = get_effective_totals(frm);
 
@@ -118,29 +135,42 @@ function recalc_item_row(frm, row) {
     if (["SEA - LCL IMPORT", "SEA - LCL EXPORT", "SEA - FCL EXPORT", "SEA - FCL IMPORT"].includes(mode)) {
         value = totals.cbm * user_rate;
     }
-    else if (["AIR - IMPORT", "AIR - EXPORT"].includes(mode)) {
+    else if (["AIR - IMPORT", "AIR - EXPORT" ,"COURIER - Import", "COURIER - Export"].includes(mode)) {
         value = Math.max(totals.weight, totals.volume_weight) * user_rate;
     }
 
-    if (value !== null) {
-        row.custom_total = value;
-    }
+    if (value === null || value === undefined) return;
 
-    row.custom_total_value = flt(row.custom_total || 0) * exchange_rate;
-    row.custom_total_in_inr = row.custom_total_value;
-    row.rate = row.custom_total_in_inr;
+    frappe.model.set_value(row.doctype, row.name, "custom_total", value);
+
+    let total_value = flt(value) * exchange_rate;
+
+    frappe.model.set_value(row.doctype, row.name, "custom_total_value", total_value);
+    frappe.model.set_value(row.doctype, row.name, "custom_total_in_inr", total_value);
+    frappe.model.set_value(row.doctype, row.name, "rate", total_value);
 }
 
 function recalc_manual_row(frm, row) {
-    let exchange_rate = flt(row.custom_exchange_rate || 1);
 
-    row.custom_total_value = flt(row.custom_total || 0) * exchange_rate;
-    row.custom_total_in_inr = row.custom_total_value;
+    let user_rate = flt(row.custom_custom_rate);
+    let exchange_rate = flt(row.custom_exchange_rate);
+    let total = flt(row.custom_total);
 
-    row.rate = row.custom_total_in_inr;
+    if (exchange_rate === null || exchange_rate === undefined) return;
 
-    // frm.refresh_field("items");
-    // update_custom_total_parent(frm);
+    // ✅ auto-fill ONLY if empty
+    if (!total && user_rate) {
+        total = user_rate;
+        frappe.model.set_value(row.doctype, row.name, "custom_total", total);
+    }
+
+    if (!total) return;
+
+    let total_value = total * exchange_rate;
+
+    frappe.model.set_value(row.doctype, row.name, "custom_total_value", total_value);
+    frappe.model.set_value(row.doctype, row.name, "custom_total_in_inr", total_value);
+    frappe.model.set_value(row.doctype, row.name, "rate", total_value);
 }
 
 // =======================================================
@@ -264,6 +294,8 @@ function recalc_all_items(frm) {
         // ONLY recalc rows using formula
         if (row.custom_formulaa) {
             recalc_item_row(frm, row);
+        } else {
+            recalc_manual_row(frm, row);
         }
     });
     // frm.refresh_field("items");

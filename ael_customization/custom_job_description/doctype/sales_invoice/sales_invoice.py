@@ -46,10 +46,10 @@ class SalesInvoice(Document):
 
                 calculated = None
 
-                if mode in ("SEA - LCL IMPORT", "SEA - LCL EXPORT"):
+                if mode in ("SEA - LCL IMPORT", "SEA - LCL EXPORT", "SEA - FCL IMPORT", "SEA - FCL EXPORT"):
                     calculated = flt(self.custom_total_cbm) * user_rate
 
-                elif mode in ("AIR - IMPORT", "AIR - EXPORT"):
+                elif mode in ("AIR - IMPORT", "AIR - EXPORT", "COURIER - Import", "COURIER - Export"):
                     chargeable_weight = max(
                         flt(self.custom_total_weight),
                         flt(self.custom_total_volume_weight)

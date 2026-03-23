@@ -50,10 +50,10 @@ class SalesOrder(Document):
 
                 totals = self.get_effective_totals()
 
-                if mode in ("SEA - LCL IMPORT", "SEA - LCL EXPORT"):
+                if mode in ("SEA - LCL IMPORT", "SEA - LCL EXPORT", "SEA - FCL IMPORT", "SEA - FCL EXPORT"):
                     calculated = totals["cbm"] * user_rate
 
-                elif mode in ("AIR - IMPORT", "AIR - EXPORT"):
+                elif mode in ("AIR - IMPORT", "AIR - EXPORT", "COURIER - Import", "COURIER - Export"):
                     chargeable_weight = max(
                         totals["weight"],
                         totals["volume_weight"]
