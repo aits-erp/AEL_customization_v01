@@ -1,3 +1,4 @@
+//testing comment
 // =======================================================
 // Sales Invoice ITEM LOGIC (LIVE BUSINESS CALCULATION)
 // =======================================================
@@ -68,12 +69,6 @@ frappe.ui.form.on("Sales Invoice Item", {
     }
 });
 
-// function toggle_custom_total_edit(frm, row) {
-//     frm.fields_dict.items.grid.toggle_enable(
-//         "custom_total",
-//         !row.custom_formulaa
-//     );
-// }
 function toggle_custom_total_edit(frm, row) {
 
     const grid_row = frm.fields_dict.items.grid.grid_rows_by_docname[row.name];
@@ -348,13 +343,7 @@ function calculate_row(frm, row) {
 
     frappe.model.set_value(row.doctype, row.name, "custom_total_value", total_value);
     frappe.model.set_value(row.doctype, row.name, "custom_total_in_inr", total_value);
-    // frappe.model.set_value(row.doctype, row.name, "rate", total_value);
 
-    let qty = flt(row.qty || 1);
-    let new_rate = total_value / qty;
-
-    // ONLY update rate if formula mode OR rate is empty
-    if ((row.custom_formulaa || !row.rate) && !(frm.__in_paste || frm.__in_import)) {
-        frappe.model.set_value(row.doctype, row.name, "rate", new_rate);
-    }
+    frappe.model.set_value(row.doctype, row.name, "rate", total_value);
 }
+
