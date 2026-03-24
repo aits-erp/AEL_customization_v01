@@ -170,6 +170,10 @@ frappe.ui.form.on("Sales Invoice", {
 
         recalc_all_items(frm);
 
+    },
+
+    qty(frm, cdt, cdn) {
+        calculate_row(frm, locals[cdt][cdn]);
     }
 
 });
@@ -300,6 +304,11 @@ function calculate_row(frm, row) {
 
     let mode = (frm.doc.custom_mode || "").toUpperCase();
     let totals = get_effective_totals(frm);
+
+    let qty = flt(row.qty || 0);
+    let custom_rate = flt(row.custom_custom_rate || 0);
+
+    frappe.model.set_value(row.doctype, row.name, "custom_total_rate", custom_rate * qty);
 
     // =============================
     // FORMULA MODE

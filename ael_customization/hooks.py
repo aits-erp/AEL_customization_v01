@@ -15,7 +15,7 @@ fixtures = [
     {
         "dt": "Custom Field",
         "filters": [
-            ["module", "in", ["custom_quotation", "custom job description"]]
+            ["module", "in", ["custom_quotation", "custom job description", "Ael Customization"]],
         ]
     }
 ]

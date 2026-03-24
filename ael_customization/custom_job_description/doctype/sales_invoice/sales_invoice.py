@@ -28,6 +28,7 @@ class SalesInvoice(Document):
         mode = (self.custom_mode or "").upper()
 
         for item in self.items:
+            item.custom_total_rate = flt(item.custom_custom_rate or 0) * flt(item.qty or 0)
             user_rate = flt(item.custom_custom_rate or 0)
             exchange_rate = flt(item.custom_exchange_rate or 1)
 
