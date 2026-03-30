@@ -172,6 +172,10 @@ frappe.ui.form.on("Sales Invoice", {
 
     },
 
+    custom_is_qty_flow(frm) {
+        recalc_all_items(frm);
+    },
+
     qty(frm, cdt, cdn) {
         calculate_row(frm, locals[cdt][cdn]);
     }
@@ -294,25 +298,127 @@ function get_effective_totals(frm) {
 }
 
 
+// function calculate_row(frm, row) {
+
+//     let user_rate = flt(row.custom_custom_rate);
+//     let exchange_rate = flt(row.custom_exchange_rate);
+//     let total = flt(row.custom_total);
+
+//     if (exchange_rate === null || exchange_rate === undefined) return;
+
+//     let mode = (frm.doc.custom_mode || "").toUpperCase();
+//     let totals = get_effective_totals(frm);
+
+//     let qty = flt(row.qty || 0);
+//     let custom_rate = flt(row.custom_custom_rate || 0);
+
+//     frappe.model.set_value(row.doctype, row.name, "custom_total_rate", custom_rate * qty);
+
+//     // =============================
+//     // FORMULA MODE
+//     // =============================
+//     if (row.custom_formulaa) {
+
+//         if (!user_rate) return;
+
+//         if (["SEA - LCL IMPORT", "SEA - LCL EXPORT", "SEA - FCL IMPORT", "SEA - FCL EXPORT"].includes(mode)) {
+//             total = totals.cbm * user_rate;
+//         }
+//         else if (["AIR - IMPORT", "AIR - EXPORT", "COURIER - Import", "COURIER - Export"].includes(mode)) {
+//             total = Math.max(totals.weight, totals.volume_weight) * user_rate;
+//         }
+
+//         frappe.model.set_value(row.doctype, row.name, "custom_total", total);
+//     }
+
+//     // =============================
+//     // MANUAL MODE
+//     // =============================
+//     else {
+
+//         // auto-fill ONLY if empty
+//         // if (!total && user_rate) {
+//         //     total = user_rate;
+//         //     frappe.model.set_value(row.doctype, row.name, "custom_total", total);
+//         // }
+//         if (!total && user_rate && !(frm.__in_paste || frm.__in_import)) {
+//             total = user_rate;
+//             frappe.model.set_value(row.doctype, row.name, "custom_total", total);
+//         }
+
+//         if (!total) return;
+//     }
+
+//     // =============================
+//     // FINAL CALC
+//     // =============================
+//     let total_value = total * exchange_rate;
+
+//     frappe.model.set_value(row.doctype, row.name, "custom_total_value", total_value);
+//     frappe.model.set_value(row.doctype, row.name, "custom_total_in_inr", total_value);
+
+//     frappe.model.set_value(row.doctype, row.name, "rate", total_value);
+// }
+
 function calculate_row(frm, row) {
 
-    let user_rate = flt(row.custom_custom_rate);
-    let exchange_rate = flt(row.custom_exchange_rate);
-    let total = flt(row.custom_total);
+    let qty_flow = is_qty_flow(frm);
 
-    if (exchange_rate === null || exchange_rate === undefined) return;
+    let qty = flt(row.qty || 0);
+    let user_rate = flt(row.custom_custom_rate || 0);
+    let exchange_rate = flt(row.custom_exchange_rate || 1);
+    let total = flt(row.custom_total || 0);
 
     let mode = (frm.doc.custom_mode || "").toUpperCase();
     let totals = get_effective_totals(frm);
 
-    let qty = flt(row.qty || 0);
-    let custom_rate = flt(row.custom_custom_rate || 0);
+    // 🔵 FLOW 2 (QTY FLOW)
+    if (qty_flow) {
 
+        // STEP 1
+        let total_rate = user_rate * qty;
+        frappe.model.set_value(row.doctype, row.name, "custom_total_rate", total_rate);
+
+        // STEP 2
+        if (row.custom_formulaa) {
+
+            if (!user_rate) return;
+
+            if (["SEA - LCL IMPORT", "SEA - LCL EXPORT", "SEA - FCL IMPORT", "SEA - FCL EXPORT"].includes(mode)) {
+                total = totals.cbm * total_rate;
+            }
+            else if (["AIR - IMPORT", "AIR - EXPORT", "COURIER - Import", "COURIER - Export"].includes(mode)) {
+                total = Math.max(totals.weight, totals.volume_weight) * total_rate;
+            }
+
+            frappe.model.set_value(row.doctype, row.name, "custom_total", total);
+
+        } else {
+            if (!total && user_rate) {
+                total = total_rate;
+                frappe.model.set_value(row.doctype, row.name, "custom_total", total);
+            }
+        }
+
+        // STEP 3
+        let final_value = total * exchange_rate;
+
+        frappe.model.set_value(row.doctype, row.name, "custom_total_value", final_value);
+        frappe.model.set_value(row.doctype, row.name, "custom_total_in_inr", final_value);
+
+        // 🔑 FIX: prevent double multiplication
+        if (qty) {
+            frappe.model.set_value(row.doctype, row.name, "rate", final_value / qty);
+        }
+
+        return;
+    }
+
+    // 🟢 FLOW 1 (KEEP YOUR EXISTING LOGIC BELOW THIS LINE UNCHANGED)
+    
+    let custom_rate = flt(row.custom_custom_rate || 0);
     frappe.model.set_value(row.doctype, row.name, "custom_total_rate", custom_rate * qty);
 
-    // =============================
-    // FORMULA MODE
-    // =============================
     if (row.custom_formulaa) {
 
         if (!user_rate) return;
@@ -326,17 +432,7 @@ function calculate_row(frm, row) {
 
         frappe.model.set_value(row.doctype, row.name, "custom_total", total);
     }
-
-    // =============================
-    // MANUAL MODE
-    // =============================
     else {
-
-        // auto-fill ONLY if empty
-        // if (!total && user_rate) {
-        //     total = user_rate;
-        //     frappe.model.set_value(row.doctype, row.name, "custom_total", total);
-        // }
         if (!total && user_rate && !(frm.__in_paste || frm.__in_import)) {
             total = user_rate;
             frappe.model.set_value(row.doctype, row.name, "custom_total", total);
@@ -345,9 +441,6 @@ function calculate_row(frm, row) {
         if (!total) return;
     }
 
-    // =============================
-    // FINAL CALC
-    // =============================
     let total_value = total * exchange_rate;
 
     frappe.model.set_value(row.doctype, row.name, "custom_total_value", total_value);
@@ -356,3 +449,6 @@ function calculate_row(frm, row) {
     frappe.model.set_value(row.doctype, row.name, "rate", total_value);
 }
 
+function is_qty_flow(frm) {
+    return !!frm.doc.custom_is_qty_flow;
+}

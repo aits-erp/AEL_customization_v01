@@ -24,20 +24,98 @@ class SalesInvoice(Document):
     # -----------------------------------------------------------
     # ITEM TOTAL CALCULATIONS (BUSINESS LOGIC)
     # -----------------------------------------------------------
+    # def update_custom_item_totals(self):
+    #     mode = (self.custom_mode or "").upper()
+
+    #     for item in self.items:
+    #         item.custom_total_rate = flt(item.custom_custom_rate or 0) * flt(item.qty or 0)
+    #         user_rate = flt(item.custom_custom_rate or 0)
+    #         exchange_rate = flt(item.custom_exchange_rate or 1)
+
+    #         # if self.is_formula_enabled(item):
+    #         #     calculated = None
+            
+    #         if self.is_formula_enabled(item):
+
+    #             # stop calculation until inputs exist
+    #             if not item.custom_custom_rate or not item.custom_exchange_rate:
+    #                 item.custom_total = 0
+    #                 item.custom_total_value = 0
+    #                 item.custom_total_in_inr = 0
+    #                 item.rate = 0
+    #                 continue
+
+    #             calculated = None
+
+    #             if mode in ("SEA - LCL IMPORT", "SEA - LCL EXPORT", "SEA - FCL IMPORT", "SEA - FCL EXPORT"):
+    #                 calculated = flt(self.custom_total_cbm) * user_rate
+
+    #             elif mode in ("AIR - IMPORT", "AIR - EXPORT", "COURIER - Import", "COURIER - Export"):
+    #                 chargeable_weight = max(
+    #                     flt(self.custom_total_weight),
+    #                     flt(self.custom_total_volume_weight)
+    #                 )
+    #                 calculated = chargeable_weight * user_rate
+
+    #             if calculated is not None:
+    #                 item.custom_total = calculated
+            
+    #         item.custom_total_value = flt(item.custom_total or 0) * exchange_rate
+    #         item.custom_total_in_inr = item.custom_total_value
+
     def update_custom_item_totals(self):
         mode = (self.custom_mode or "").upper()
 
+        # 🔵 FLOW 2: QTY FLOW
+        if self.is_qty_flow():
+            for item in self.items:
+
+                qty = flt(item.qty or 0)
+                user_rate = flt(item.custom_custom_rate or 0)
+                exchange_rate = flt(item.custom_exchange_rate or 1)
+
+                # STEP 1: total_rate
+                total_rate = user_rate * qty
+                item.custom_total_rate = total_rate
+
+                # STEP 2: formula or manual
+                if self.is_formula_enabled(item):
+
+                    calculated = None
+
+                    if mode in ("SEA - LCL IMPORT", "SEA - LCL EXPORT", "SEA - FCL IMPORT", "SEA - FCL EXPORT"):
+                        calculated = flt(self.custom_total_cbm) * total_rate
+
+                    elif mode in ("AIR - IMPORT", "AIR - EXPORT", "COURIER - Import", "COURIER - Export"):
+                        chargeable_weight = max(
+                            flt(self.custom_total_weight),
+                            flt(self.custom_total_volume_weight)
+                        )
+                        calculated = chargeable_weight * total_rate
+
+                    if calculated is not None:
+                        item.custom_total = calculated
+
+                else:
+                    if not item.custom_total:
+                        item.custom_total = total_rate
+
+                # STEP 3: final
+                item.custom_total_value = flt(item.custom_total or 0) * exchange_rate
+                item.custom_total_in_inr = item.custom_total_value
+
+            return  # 🔴 STOP FLOW 1 COMPLETELY
+
+        # 🟢 FLOW 1 (EXISTING CODE — UNCHANGED)
         for item in self.items:
+
             item.custom_total_rate = flt(item.custom_custom_rate or 0) * flt(item.qty or 0)
+
             user_rate = flt(item.custom_custom_rate or 0)
             exchange_rate = flt(item.custom_exchange_rate or 1)
 
-            # if self.is_formula_enabled(item):
-            #     calculated = None
-            
             if self.is_formula_enabled(item):
 
-                # stop calculation until inputs exist
                 if not item.custom_custom_rate or not item.custom_exchange_rate:
                     item.custom_total = 0
                     item.custom_total_value = 0
@@ -59,7 +137,7 @@ class SalesInvoice(Document):
 
                 if calculated is not None:
                     item.custom_total = calculated
-            
+
             item.custom_total_value = flt(item.custom_total or 0) * exchange_rate
             item.custom_total_in_inr = item.custom_total_value
 
@@ -134,3 +212,6 @@ class SalesInvoice(Document):
 
     def is_formula_enabled(self, item):
         return flt(item.custom_formulaa) == 1
+    
+    def is_qty_flow(self):
+        return flt(self.custom_is_qty_flow) == 1
