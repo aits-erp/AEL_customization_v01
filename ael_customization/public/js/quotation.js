@@ -423,24 +423,12 @@ function calculate_row(frm, row) {
         if (!total) return;
     }
 
-    // FINAL CALC
     let total_value = total * exchange_rate;
 
-    if (row.custom_formula) {
-        // Set custom_total directly on the row object first (no event trigger)
-        row.custom_total = total;
-        frm.fields_dict.items.grid.grid_rows_by_docname[row.name]
-            ?.refresh_field("custom_total");
-
-        // Then chain only the value fields
-        frappe.model.set_value(row.doctype, row.name, "custom_total_value", total_value)
-            .then(() => frappe.model.set_value(row.doctype, row.name, "custom_total_in_inr", total_value))
-            .then(() => frappe.model.set_value(row.doctype, row.name, "price_list_rate", total_value))
-            .then(() => frappe.model.set_value(row.doctype, row.name, "rate", total_value));
-    } else {
-        frappe.model.set_value(row.doctype, row.name, "custom_total_value", total_value);
-        frappe.model.set_value(row.doctype, row.name, "custom_total_in_inr", total_value);
-        frappe.model.set_value(row.doctype, row.name, "price_list_rate", total_value);
-        frappe.model.set_value(row.doctype, row.name, "rate", total_value);
-    }
+    row.custom_total = total;
+    row.custom_total_value = total_value;
+    row.custom_total_in_inr = total_value;
+    row.rate = total_value;
+    row.price_list_rate = total_value;
+    frm.fields_dict.items.grid.grid_rows_by_docname[row.name]?.refresh();
 }
