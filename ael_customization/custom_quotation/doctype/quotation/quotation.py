@@ -1,10 +1,10 @@
 import frappe
-from frappe.model.document import Document
+from erpnext.selling.doctype.quotation.quotation import Quotation as _Quotation
 from frappe.model.mapper import get_mapped_doc
 from frappe.utils import flt
 
 
-class Quotation(Document):
+class Quotation(_Quotation):
 
     def validate(self):
         # 1. Dimension row calculations
@@ -19,7 +19,7 @@ class Quotation(Document):
         # 4. Push final INR value into standard rate
         self.sync_standard_rate_from_custom_total()
 
-        self.calculate_taxes_and_totals()
+        super().validate()
 
 
     # -----------------------------------------------------------

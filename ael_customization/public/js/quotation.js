@@ -435,5 +435,4 @@ function calculate_row(frm, row) {
     frappe.model.set_value(row.doctype, row.name, "price_list_rate", total_value);
 
     frm.script_manager.trigger("price_list_rate", row.doctype, row.name);
-    frm.doc.taxes && frm.call("calculate_taxes_and_totals");
 }
