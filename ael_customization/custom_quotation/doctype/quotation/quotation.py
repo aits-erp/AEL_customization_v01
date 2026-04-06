@@ -77,6 +77,7 @@ class Quotation(_Quotation):
             item.rate = item.custom_total_value
             item.discount_percentage = 0
             item.discount_amount = 0
+            item.taxable_value = item.custom_total_value
 
     # -----------------------------------------------------------
     # DIMENSION ROW CALCULATION
