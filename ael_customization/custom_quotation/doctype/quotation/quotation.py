@@ -19,6 +19,8 @@ class Quotation(Document):
         # 4. Push final INR value into standard rate
         self.sync_standard_rate_from_custom_total()
 
+        self.calculate_taxes_and_totals()
+
 
     # -----------------------------------------------------------
     # ITEM TOTAL CALCULATIONS (BUSINESS LOGIC)
@@ -72,6 +74,7 @@ class Quotation(Document):
             item.custom_total_value = flt(item.custom_total) * exchange_rate
             item.custom_total_in_inr = item.custom_total_value
             item.rate = item.custom_total_value
+            item.price_list_rate = item.custom_total_value
 
 
     # -----------------------------------------------------------

@@ -89,8 +89,6 @@ frappe.ui.form.on("Quotation Item", {
 
         if (row.custom_formula) {
             calculate_row(frm, locals[cdt][cdn]);
-        } else {
-            calculate_row(frm, locals[cdt][cdn]);
         }
     },
 
@@ -343,7 +341,8 @@ function recalc_all_items(frm) {
     (frm.doc.items || []).forEach(row => {
 
         if (row.custom_formula) {
-            recalc_item_row(frm, row);
+            // recalc_item_row(frm, row);
+            calculate_row(frm, row);
         }
 
     });
@@ -379,7 +378,6 @@ function get_effective_totals(frm) {
     };
 
 }
-
 
 // =======================================================
 // FINAL CENTRALIZED CALCULATION FUNCTION
@@ -434,4 +432,8 @@ function calculate_row(frm, row) {
     frappe.model.set_value(row.doctype, row.name, "custom_total_value", total_value);
     frappe.model.set_value(row.doctype, row.name, "custom_total_in_inr", total_value);
     frappe.model.set_value(row.doctype, row.name, "rate", total_value);
+    frappe.model.set_value(row.doctype, row.name, "price_list_rate", total_value);
+
+    frm.script_manager.trigger("price_list_rate", row.doctype, row.name);
+    frm.doc.taxes && frm.call("calculate_taxes_and_totals");
 }
