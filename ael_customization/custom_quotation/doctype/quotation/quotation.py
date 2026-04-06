@@ -73,10 +73,10 @@ class Quotation(_Quotation):
             # ---------- INR CONVERSION ----------
             item.custom_total_value = flt(item.custom_total) * exchange_rate
             item.custom_total_in_inr = item.custom_total_value
-            item.rate = item.custom_total_value
             item.price_list_rate = item.custom_total_value
+            item.rate = item.custom_total_value
             item.discount_percentage = 0
-
+            item.discount_amount = 0
 
     # -----------------------------------------------------------
     # DIMENSION ROW CALCULATION
