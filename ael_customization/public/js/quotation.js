@@ -424,15 +424,22 @@ function calculate_row(frm, row) {
         if (!total) return;
     }
 
-    // =============================
     // FINAL CALC
-    // =============================
     let total_value = total * exchange_rate;
 
-    frappe.model.set_value(row.doctype, row.name, "custom_total_value", total_value);
-    frappe.model.set_value(row.doctype, row.name, "custom_total_in_inr", total_value);
-    frappe.model.set_value(row.doctype, row.name, "rate", total_value);
-    frappe.model.set_value(row.doctype, row.name, "price_list_rate", total_value);
-
-    frm.script_manager.trigger("price_list_rate", row.doctype, row.name);
+    if (row.custom_formula) {
+        // Chain sequentially for formula rows to prevent ERPNext watcher interference
+        frappe.model.set_value(row.doctype, row.name, "custom_total", total)
+            .then(() => frappe.model.set_value(row.doctype, row.name, "custom_total_value", total_value))
+            .then(() => frappe.model.set_value(row.doctype, row.name, "custom_total_in_inr", total_value))
+            .then(() => frappe.model.set_value(row.doctype, row.name, "price_list_rate", total_value))
+            .then(() => frappe.model.set_value(row.doctype, row.name, "rate", total_value))
+            .then(() => frm.script_manager.trigger("price_list_rate", row.doctype, row.name));
+    } else {
+        frappe.model.set_value(row.doctype, row.name, "custom_total_value", total_value);
+        frappe.model.set_value(row.doctype, row.name, "custom_total_in_inr", total_value);
+        frappe.model.set_value(row.doctype, row.name, "price_list_rate", total_value);
+        frappe.model.set_value(row.doctype, row.name, "rate", total_value);
+        frm.script_manager.trigger("price_list_rate", row.doctype, row.name);
+    }
 }

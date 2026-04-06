@@ -17,7 +17,7 @@ class Quotation(_Quotation):
         self.update_custom_item_totals()
 
         # 4. Push final INR value into standard rate
-        self.sync_standard_rate_from_custom_total()
+        # self.sync_standard_rate_from_custom_total()
 
         super().validate()
 
@@ -73,7 +73,7 @@ class Quotation(_Quotation):
             # ---------- INR CONVERSION ----------
             item.custom_total_value = flt(item.custom_total) * exchange_rate
             item.custom_total_in_inr = item.custom_total_value
-            item.rate = item.custom_total_value
+            # item.rate = item.custom_total_value
             item.price_list_rate = item.custom_total_value
 
 
